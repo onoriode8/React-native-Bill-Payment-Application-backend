@@ -1,13 +1,17 @@
 import jwt from 'jsonwebtoken'
 import axios from 'axios'
 import bcryptjs from 'bcryptjs'
+import otpGenerator from 'otp-generator'
 import { validationResult } from 'express-validator'
+import { UAParser } from 'ua-parser-js'
 
 import Users from '../../model/user/user.js'
 import NairaWallet from '../../model/user/nairaWallet.js'
 import { createPaystackVirtualAccount } from '../../util/paystack.js'
-import { alertSecurity } from '../../util/security.js'
+import { alertSecurity, verifyEmailAddress } from '../../util/security.js'
 
+
+const uaParser = new UAParser()
 
 
 export const login = async (req, res) => {
@@ -28,20 +32,26 @@ export const login = async (req, res) => {
         return res.status(500).json("Internal Server Error")
     }
 
+    const uaString = req.headers['user-agent']
+    const parse = uaParser.setUA(uaString).getResult()
+
     try {
         const isValid = await bcryptjs.compare(password, user.password)
         if(!isValid) return res.status(401).json("Invalid Credentials Entered");
         const accessToken = jwt.sign({ email: user.email, id: user._id }, process.env.AccessToken, { expiresIn: "15m" })
         if(!accessToken) return res.status(401).json("Not Authenticated")
         const userEmail = user.email;
-        //get the user location from the frontend to the backend
-        //const ip = req.["x-forwarded-x"] //to get the ip address of the device.
-        // openCage api to verify the ip address source in milliseconds
-        // const locationData = await axios.post(`https://opencage.com/${ip}/${process.env.OPENCAGE_API_KEY}`)
-        // console.log("Location", locationData)
-        // if(user.currentLocation !== location) {
-            // alertSecurity(location, userEmail)
-        // }
+        
+        const ip = req.headers["x-forwarded-x"].split(",")[0] || req.connection.remoteAddress || req.socket.remoteAddress //to get the ip address of the device.
+        const locationData = await axios.post(`https://ipapi.co/${ip}/json/`);
+        if(user.loginDetails.ipAddress !== ip) {
+            const accessDevice = {
+                device: parse.device.type,
+                model: parse.device.model,
+                version: parse.os.version,
+            }
+            alertSecurity(locationData, userEmail, accessDevice)
+        }
         user.password = undefined;
         res.cookie("accessToken", accessToken, {
             maxAge: 1000 * 60 * 60,
@@ -58,74 +68,99 @@ export const login = async (req, res) => {
 
 export const signup = async (req, res) => {
     const { email, username, password, fullname } = req.body
+    console.log("BODY", email, fullname, password)
     const result = validationResult(req)
     if(!result.isEmpty()) {
-        for(const error of result) {
-            console.log("FOR", error)
-            return res.status(422).json("Invalid value passed")
+        for(const error of result.errors) {
+            return res.status(422).json(`${error.msg} ${error.path} passed.`)
         }
     }
 
-    //get the user location from the frontend
-    //const ip = req.["x-forwarded-x"] //to get the ip address of the device.
-    // openCage api to verify the ip address source in milliseconds
-    // const locationData = await axios.post(`https://opencage.com/${ip}/${process.env.OPENCAGE_API_KEY}`)
-    // console.log("Location", locationData)
-
+    console.log("REACH FROM MOBILE")
+    
+    const uaString = req.headers['user-agent'] 
+    const parse = uaParser.setUA(uaString).getResult()
+    const Address = "64.145.93.168"
+    const ip = req.headers["x-forwarded-x"]?.split(',')[0] || req.connection.remoteAddress || req.socket.remoteAddress 
+    const location = await axios.get(`https://ipapi.co/${ip || Address}/json/`)
     try {
-        const user = await Users.findOne(email) //add Promise.all([]) later when username futures is added to create a unique username.
-        if(user) return res.status(400).json(`User already exist, login instead.`)
+        const user = await Users.findOne({ email }) //add Promise.all([]) later when username futures is added to create a unique username.
+        if(user) return res.status(409).json(`User already exist, login instead.`)
     } catch (error) {
         return res.status(500).json("Internal Server Error");
     }
 
-    const { data, customerCode } = createPaystackVirtualAccount(email, fullname) //create an account function
+    //const { data, customerCode } = createPaystackVirtualAccount(email, fullname) //create an account function
 
     const userWallet = new NairaWallet({
         balance: 0,
-        paystackCustomerCode: customerCode, //unique e.g 153678
+        paystackCustomerCode: 153678, //customerCode, //unique e.g 153678
         paystackVirtualAccount: {
-            bankName: data.bank.name,
-            reference: data.assigned_reference,
+            bankName: "wema-bank", //data.bank.name,
+            reference: "unique string", //data.assigned_reference,
             accountName: fullname,
-            accountNumber: data.account_number,
+            accountNumber: 9070351944 //data.account_number,
         },
         userId: null
     })
-
     try {
         const hashedPassword = await bcryptjs.hash(password, 12)
-        
+        //generate unique 6 digit otp pin.
+        const uniqueOTP = otpGenerator.generate(6, { upperCaseAlphabets: false, lowerCaseAlphabets: false, specialChars: false })
+        const date = new Date(Date.now() + 15 * 60 * 1000) //15 minutes
+        const formattedToString = date.toString()
+        const otpExpiresIn = formattedToString.split(" ")[4] //only hrs, mins & secs extracted here
+    
+        const hashedUniqueOTP = await bcryptjs.hash(uniqueOTP, 12);
+        //dummy data phone number
+        const phoneNumber = "09055364280"
         const createdUser = new Users({
             role: "User",
-            createdAt: new Date,
+            createdAt: new Date(Date.now()),
             password: hashedPassword,
-            username: "", //username later
-            phoneNumber: 0,
+            isMFA: false,
+            username: username, //username later
+            fullname: fullname,
+            phoneNumber: Number(phoneNumber),
             email: email,
+            otp: {
+                otpCode: hashedUniqueOTP, //string
+                expiresIn: otpExpiresIn
+            },
+            isEmailVerified: false,
+            loginDetails: {
+                date: new Date(Date.now()),
+                accessDevice: [{
+                    device: parse.device.type,
+                    model: parse.device.model,
+                    version: parse.os.version,
+                }],
+                location: location.data.city + ", " + location.data.region + ". " + location.data.country_name, // i.e => city, state, country.
+                ipAddress: location.data.ip,
+            },
             nairaWallet: userWallet._id,
+            security: null,
             // referra: ,
-            walletTransactionHistory: []
+            beneficiaries: [],
+            subscriptionHistory: [],
+            fundsWalletTransactionHistory: []
         });
 
-        const [wallet, user ] = await Promise.all([ userWallet.save(), createdUser.save()])
+        const [wallet, user] = await Promise.all([ userWallet.save(), createdUser.save() ])
+
         if(!wallet && !user) {
             return res.status(400).json("Failed to create an account, try again later.")
         }
+
         wallet.userId = user._id
         await wallet.save();
-        user.password = undefined;
-        const accessToken = jwt.sign({ email: user.email, id: user._id }, process.env.AccessToken, { expiresIn: "15m" })
-        if(!accessToken) return res.status(401).json("Not Authenticated");
 
-        // res.cookie("accessToken", accessToken, {
-        //     maxAge: 1000 * 60 * 60,
-        //     https: false, //change to true on production
-        //     secure: true,
+        const token = jwt.sign({ email: user.email, id: user._id },
+            process.env.AccessToken, { expiresIn: "15m" })
+        await verifyEmailAddress(email, fullname, uniqueOTP)
 
-        // })
-        res.status(200).json("Account created successfully. You can login now and start using your account.") //user
+        return res.status(200).json({ fullname: user.fullname, userId: user._id, token })
     } catch(err) {
-        return res.status(500).json("Internal Server Error")
+        return res.status(500).json(err.message) 
     }
 }

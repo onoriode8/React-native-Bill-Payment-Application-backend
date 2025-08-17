@@ -13,6 +13,8 @@ import ownerRoute from './routes/owner.js'
 
 const server = express()
 
+server.use(express.json())
+
 server.use(cookieParser())
 
 server.use(cors({

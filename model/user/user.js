@@ -6,13 +6,32 @@ const userSchema = new mongoose.Schema({
     role: { type: String, required: true, trim: true }, // user | admin
     createdAt: { type: Date, required: true, trim: true },
     password: { type: String, required: true, trim: true },
-    location: { type: String, required: true, trim: true }, // i.e => city, state, country.
+    isMFA: { type: Boolean, required: true },
+    isEmailVerified: { type: Boolean, required: true },
+    otp: {
+        otpCode: { type: String, required: true, trim: true },
+        expiresIn: { type: String, required: true, trim: true },
+    },
+    loginDetails: {
+        date: { type: Date, required: true, trim: true },
+        location: { type: String, required: true, trim: true }, // i.e => city, state, country.
+        ipAddress: { type: String, required: true, trim: true },
+        accessDevice: [{
+            device: { type: String, required: true, trim: true },
+            model: { type: String, required: true, trim: true },
+            version: { type: String, required: true, trim: true }
+        }]
+    },
+    fullname: { type: String, required: true, trim: true },
     username: { type: String, required: true, trim: true, unique: true },
     email: { type: String, required: true, lowercase: true, unique: true, trim: true },
     phoneNumber: { type: Number, required: true, trim: true, unique: true, default: 0 },
+    security: { type: mongoose.Schema.Types.ObjectId, ref: "Security" },
+    beneficiaries: [ { type: mongoose.Schema.Types.ObjectId, ref: "Beneficiaries" } ],
     nairaWallet: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "NairaWallet"},
     // referra: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Referra"},
-    walletTransactionHistory: [ { type: mongoose.Schema.Types.ObjectId, ref: "TransactionHistory" } ]
+    subscriptionHistory: [ { type: mongoose.Schema.Types.ObjectId, ref: "TransactionHistory" } ],
+    fundsWalletTransactionHistory: [ { type: mongoose.Schema.Types.ObjectId, ref: "TransactionHistory" } ]
 })
 
 

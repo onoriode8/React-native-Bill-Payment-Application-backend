@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-import Users from '../model/user/user'
+import Users from '../model/user/user.js'
 
 
 

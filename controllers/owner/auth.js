@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import bcryptjs from 'bcryptjs'
 
-import OwnerModel from '../../model/owner/ownerModel'
+import OwnerModel from '../../model/owner/ownerModel.js'
 
 
 

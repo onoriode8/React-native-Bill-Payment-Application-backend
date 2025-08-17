@@ -1,5 +1,5 @@
-import Users from "../../model/user/user";
-import { withdrawFundsFromVirtualAccount } from "../../util/paystack";
+import Users from "../../model/user/user.js";
+import { withdrawFundsFromVirtualAccount } from "../../util/paystack.js";
 
 
 

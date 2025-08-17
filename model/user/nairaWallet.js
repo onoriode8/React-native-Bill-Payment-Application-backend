@@ -2,7 +2,11 @@ import mongoose from 'mongoose'
 
 
 const userNairaWalletSchema = new mongoose.Schema({
-    balance: { type: Number, required: true, trim: true, unique: true },
+    balance: { type: Number, default: 0 },
+    TotalFunds: [{
+        moneyIn: { type: Number }, //once received
+        moneyOut:{ type: Number },
+    }],
     paystackCustomerCode: { type: Number, required: true, trim: true, unique: true },
     paystackVirtualAccount: {
         bankName: { type: String, required: true, trim: true },

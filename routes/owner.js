@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { login } from '../controllers/owner/auth.js'
-
+import { totalEarnings } from '../controllers/owner/totalEarning.js'
 
 const router = Router()
 

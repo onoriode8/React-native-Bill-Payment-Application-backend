@@ -1,12 +1,10 @@
 import { connect } from 'mongoose'
-
+import "dotenv/config.js"
 
 
 async function ConnectDB() {
     try {
-        const res = await connect(process.env.MONGODB_URL)
-        console.log("DB RESP", res)
-        // if(res.includes("Invalid")) throw new Error(res)
+        await connect(process.env.MONGODB_URL)
     } catch(err) {
         console.log(err.message)
     }

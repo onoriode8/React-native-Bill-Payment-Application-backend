@@ -17,7 +17,7 @@ router.post("/signup", check("email").notEmpty().isEmail().normalizeEmail(),
     check("password").isLength({ max: 6 }), rateLimit, signup);
 
 // routes/webhook.js
-router.post('/webhook', paystackWebhook)
+// router.post('/webhook', paystackWebhook)
 
 
 
