@@ -4,6 +4,7 @@ import bcryptjs from 'bcryptjs'
 import otpGenerator from 'otp-generator'
 import { validationResult } from 'express-validator'
 import { UAParser } from 'ua-parser-js'
+import { startSession } from 'mongoose'
 
 import Users from '../../model/user/user.js'
 import NairaWallet from '../../model/user/nairaWallet.js'
@@ -26,11 +27,13 @@ export const login = async (req, res) => {
 
     let user;
     try {
-        user = await Users.findOne(email) //add Promise.all([]) later when username futures is added to create a unique username.
+        user = await Users.findOne(email).populate("NairaWallet") //add Promise.all([]) later when username futures is added to create a unique username.
         if(!user) return res.status(404).json("User not found.")
     } catch (error) {
         return res.status(500).json("Internal Server Error")
     }
+
+    console.log("USER Line 36", user) //check if the .populate("NairaWallet") is rendered properly.
 
     const uaString = req.headers['user-agent']
     const parse = uaParser.setUA(uaString).getResult()
@@ -53,13 +56,26 @@ export const login = async (req, res) => {
             alertSecurity(locationData, userEmail, accessDevice)
         }
         user.password = undefined;
-        res.cookie("accessToken", accessToken, {
-            maxAge: 1000 * 60 * 60,
-            https: false, //change to true on production
-            secure: true,
-
-        })
-        res.status(200).json(user)
+        user.otp = undefined
+        const token = jwt.sign(
+            { email: user.email, userId: user._id, role: user.role },
+            process.env.AccessToken, { expiresIn: "15m" }) //check whether to increase the time from 15m to 30m
+        if(user.isEmailVerified === false) {
+            //generate unique 6 digit otp pin.
+            const uniqueOTP = otpGenerator.generate(6, { upperCaseAlphabets: false, lowerCaseAlphabets: false, specialChars: false })
+            const date = new Date(Date.now() + 15 * 60 * 1000) //15 minutes
+            const formattedToString = date.toString()
+            const otpExpiresIn = formattedToString.split(" ")[4] //only hrs, mins & secs extracted here
+            const hashedUniqueOTP = await bcryptjs.hash(uniqueOTP, 12);
+            user.otp = {
+                otpCode: hashedUniqueOTP,
+                expiresIn: otpExpiresIn
+            }
+            await user.save()
+            await verifyEmailAddress(user.email, user.fullname, uniqueOTP)
+            return res.status(200).json(user.isEmailVerified)
+        }
+        res.status(200).json(user, token)
     } catch(err) {
         return res.status(500).json("Internal Server Error")
     }
@@ -68,26 +84,27 @@ export const login = async (req, res) => {
 
 export const signup = async (req, res) => {
     const { email, username, password, fullname } = req.body
-    console.log("BODY", email, fullname, password)
     const result = validationResult(req)
     if(!result.isEmpty()) {
         for(const error of result.errors) {
             return res.status(422).json(`${error.msg} ${error.path} passed.`)
         }
     }
-
-    console.log("REACH FROM MOBILE")
     
     const uaString = req.headers['user-agent'] 
     const parse = uaParser.setUA(uaString).getResult()
     const Address = "64.145.93.168"
     const ip = req.headers["x-forwarded-x"]?.split(',')[0] || req.connection.remoteAddress || req.socket.remoteAddress 
     const location = await axios.get(`https://ipapi.co/${ip || Address}/json/`)
+    let user
     try {
-        const user = await Users.findOne({ email }) //add Promise.all([]) later when username futures is added to create a unique username.
-        if(user) return res.status(409).json(`User already exist, login instead.`)
+        user = await Users.findOne({ email }) //add Promise.all([]) later when username futures is added to create a unique username.
     } catch (error) {
         return res.status(500).json("Internal Server Error");
+    }
+
+    if(user) {
+        return res.status(409).json(`User already exist, login instead.`)
     }
 
     //const { data, customerCode } = createPaystackVirtualAccount(email, fullname) //create an account function
@@ -103,6 +120,8 @@ export const signup = async (req, res) => {
         },
         userId: null
     })
+    
+    let sess
     try {
         const hashedPassword = await bcryptjs.hash(password, 12)
         //generate unique 6 digit otp pin.
@@ -110,7 +129,9 @@ export const signup = async (req, res) => {
         const date = new Date(Date.now() + 15 * 60 * 1000) //15 minutes
         const formattedToString = date.toString()
         const otpExpiresIn = formattedToString.split(" ")[4] //only hrs, mins & secs extracted here
-    
+        
+        sess = await startSession()
+        sess.startTransaction()
         const hashedUniqueOTP = await bcryptjs.hash(uniqueOTP, 12);
         //dummy data phone number
         const phoneNumber = "09055364280"
@@ -146,21 +167,25 @@ export const signup = async (req, res) => {
             fundsWalletTransactionHistory: []
         });
 
-        const [wallet, user] = await Promise.all([ userWallet.save(), createdUser.save() ])
+        const [wallet, savedUser] = await Promise.all([ userWallet.save({ session: sess }), createdUser.save({ session: sess }) ])
 
-        if(!wallet && !user) {
+        if(!wallet && !savedUser) {
             return res.status(400).json("Failed to create an account, try again later.")
         }
 
-        wallet.userId = user._id
-        await wallet.save();
-
-        const token = jwt.sign({ email: user.email, id: user._id },
+        wallet.userId = savedUser._id
+        await wallet.save({ session: sess });
+        await sess.commitTransaction()
+        await sess.endSession()
+        const token = jwt.sign(
+            { email: savedUser.email, id: savedUser._id, role: savedUser.role },
             process.env.AccessToken, { expiresIn: "15m" })
         await verifyEmailAddress(email, fullname, uniqueOTP)
 
-        return res.status(200).json({ fullname: user.fullname, userId: user._id, token })
+        return res.status(200).json(
+            { fullname: savedUser.fullname, userId: savedUser._id, token })
     } catch(err) {
-        return res.status(500).json(err.message) 
+        await sess.abortTransaction()
+        return res.status(500).json("Internal Server Error") 
     }
 }

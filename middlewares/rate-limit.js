@@ -3,7 +3,7 @@ import expressRateLimit from "express-rate-limit"
 
 
 const rateLimit = expressRateLimit({
-    limit: 3,
+    limit: 4,
     windowMs: 60000 * 15, // 15 minutes
     message: "Too many request, please try again after 15 minutes.",
     statusCode: 429,

@@ -7,7 +7,7 @@ import paystackWebhook from '../util/webhook.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 // import roleBasedAccess from '../middlewares/role-based-access.js';
 import { transfer } from '../controllers/user/transfer.js';
-import { getProfile, getUserBankDetails } from '../controllers/user/get.details.js'
+import { getProfile, getUserBankDetails, getUserData } from '../controllers/user/get.details.js'
 import { buyAirtimeSubscription, buyDataSubscription, gotvSubscription, 
     dstvSubscription, electricityBillSubscription} from '../controllers/user/subscription.js'
 import { allTransactionHistory, fundsTransactionHistory, 
@@ -23,8 +23,11 @@ router.post("/signup", check("email").notEmpty().isEmail().normalizeEmail(),
 router.post("/login", check("email").notEmpty().isEmail().normalizeEmail(), 
     check("password").isLength({ min: 6 }), rateLimit, login);
 
-router.post("/verify/email/otp/:id", check("code").notEmpty().isLength({ min: 6 }), 
-    rateLimit, verifyEmailByOTP);  //continue with this controller and route later to verify user otp after registering  
+router.get("/user/get/personal/data/:userId", 
+    check("userId").notEmpty().isLength({ min: 6 }), getUserData)
+
+router.post("/verify/email/otp/:userId", check("otpCode").notEmpty().isLength({ min: 6 }), 
+    rateLimit, verifyEmailByOTP);   
     
 // routes/webhook.js
 router.post('/webhook', paystackWebhook)

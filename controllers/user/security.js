@@ -6,21 +6,25 @@ import Users from '../../model/user/user.js'
 
 
 export const verifyEmailByOTP = async (req, res) => {
-    const otpCode = req.body.otp
-    const userId = req.params.id;
+    const otpCode = req.body.otpCode
+    const code = Number(otpCode)
+    const userId = req.params.userId;
     const result = validationResult(req)
-    console.log("OTP", otpCode)
-    console.log("PARAMS - USER-ID", userId)
     if(!result.isEmpty()) {
         for(const error of result.errors) {
             return res.status(422).json(`${error.msg} ${error.path} passed.`)
         }
     }
 
+    if(typeof(code) !== "number") { 
+        return res.status(422).json("Invalid code entered. Codes must be a number.") 
+    }
+
     try {
         const user = await Users.findById(req.user.userId)
         if(!user) return res.status(404).json("User not found")
-console.log("OTP FROM SERVER", user.otp)
+        
+        console.log("OTP FROM DB", user.otp);
 
         if(userId !== req.user.userId) {
             return res.status(401).json("Not allowed.")
@@ -29,7 +33,7 @@ console.log("OTP FROM SERVER", user.otp)
         if(codeDateSent > user.otp.expiresIn) {
             return res.status(419).json("Code Expired, login to continue.")
         }
-        const isValid = await bcryptjs.compare(Number(otpCode), user.otp.otpCode) //convert to number.
+        const isValid = await bcryptjs.compare(Number(code), user.otp.otpCode) //convert to number.
         if(!isValid) return res.status(422).json("Invalid code entered.");
 
         user.isEmailVerified = true

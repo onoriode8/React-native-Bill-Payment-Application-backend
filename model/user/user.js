@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
         }]
     },
     fullname: { type: String, required: true, trim: true },
-    username: { type: String, required: true, trim: true, unique: true },
+    username: { type: String, trim: true }, //add require and unique if you add username on ui later
     email: { type: String, required: true, lowercase: true, unique: true, trim: true },
     phoneNumber: { type: Number, required: true, trim: true, unique: true, default: 0 },
     security: { type: mongoose.Schema.Types.ObjectId, ref: "Security" },

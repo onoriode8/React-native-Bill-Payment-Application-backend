@@ -17,10 +17,10 @@ server.use(express.json())
 
 server.use(cookieParser())
 
-server.use(cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true
-}))
+// server.use(cors({
+//     origin: process.env.FRONTEND_URL,
+//     credentials: true
+// }))
 
 server.use(helmet())
 server.use(compression())
