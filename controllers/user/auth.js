@@ -112,7 +112,7 @@ export const signup = async (req, res) => {
     const Address = "64.145.93.168"
     const ip = req.headers["x-forwarded-x"]?.split(',')[0] || req.connection.remoteAddress || req.socket.remoteAddress 
     const mobileIp = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || req.socket?.remoteAddress
-    const location = await axios.get(`https://ipapi.co/${mobileIp ? mobileIp : ip || Address}/json/`)
+    const location = await axios.get(`https://ipapi.co/${mobileIp}/json/`);
     let user
     try {
         user = await Users.findOne({ email }) //add Promise.all([]) later when username futures is added to create a unique username.
