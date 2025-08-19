@@ -84,18 +84,35 @@ export const login = async (req, res) => {
 
 export const signup = async (req, res) => {
     const { email, username, password, fullname } = req.body
+    const header = req.headers
+    // console.log("REACHED", header["x-forwarded-for"])
+    const mobileUserAgent = header["x-device-ua"]
     const result = validationResult(req)
     if(!result.isEmpty()) {
         for(const error of result.errors) {
             return res.status(422).json(`${error.msg} ${error.path} passed.`)
         }
     }
-    
+
+    // console.log("MOBILE type", typeof(mobileUserAgent))
+    // console.log("MOBILE 1", mobileUserAgent)
+
+    //for Android & IPhone user-agent
+    const osName = mobileUserAgent.split(" ")[0] //os => i.e IOS || Android
+    const brand = mobileUserAgent.split(" ")[1] //brand => 1.e Apple || Samsung || Nokia || etc. 
+    const modelName = `${mobileUserAgent.split(" ")[2]} ${mobileUserAgent.split(" ")[3]} ${mobileUserAgent.split(" ")[4]}`//modelName => 1.e iPhone XS Max || Samsung S 24 Ultra || IPhone x || etc. 
+    const osVersion = mobileUserAgent.split(" ")[5] //osVersion => 1.e Apple || Samsung || Nokia || etc. 
+    const deviceName = mobileUserAgent.split(" ")[6] //deviceName => 1.e same as brand Apple || Samsung || Nokia || etc. 
+
+    // console.log("LINE 103", `"OS"=>${osName} "brand"=>${brand} "modelName"=>${modelName} "version"=>${osVersion} "deviceName"=>${deviceName}`)
+    //for web user-agent
     const uaString = req.headers['user-agent'] 
     const parse = uaParser.setUA(uaString).getResult()
+
     const Address = "64.145.93.168"
     const ip = req.headers["x-forwarded-x"]?.split(',')[0] || req.connection.remoteAddress || req.socket.remoteAddress 
-    const location = await axios.get(`https://ipapi.co/${ip || Address}/json/`)
+    const mobileIp = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || req.socket?.remoteAddress
+    const location = await axios.get(`https://ipapi.co/${mobileIp ? mobileIp : ip || Address}/json/`)
     let user
     try {
         user = await Users.findOne({ email }) //add Promise.all([]) later when username futures is added to create a unique username.
@@ -129,7 +146,8 @@ export const signup = async (req, res) => {
         const date = new Date(Date.now() + 15 * 60 * 1000) //15 minutes
         const formattedToString = date.toString()
         const otpExpiresIn = formattedToString.split(" ")[4] //only hrs, mins & secs extracted here
-        
+    // console.log("REACHED", )
+
         sess = await startSession()
         sess.startTransaction()
         const hashedUniqueOTP = await bcryptjs.hash(uniqueOTP, 12);
@@ -152,9 +170,9 @@ export const signup = async (req, res) => {
             loginDetails: {
                 date: new Date(Date.now()),
                 accessDevice: [{
-                    device: parse.device.type,
-                    model: parse.device.model,
-                    version: parse.os.version,
+                    device: deviceName ? deviceName : parse.device.type, 
+                    model: modelName ? modelName : parse.device.model,
+                    version: osVersion ? osVersion : parse.os.version,
                 }],
                 location: location.data.city + ", " + location.data.region + ". " + location.data.country_name, // i.e => city, state, country.
                 ipAddress: location.data.ip,
@@ -166,6 +184,7 @@ export const signup = async (req, res) => {
             subscriptionHistory: [],
             fundsWalletTransactionHistory: []
         });
+    // console.log("REACHED", )
 
         const [wallet, savedUser] = await Promise.all([ userWallet.save({ session: sess }), createdUser.save({ session: sess }) ])
 
@@ -177,15 +196,17 @@ export const signup = async (req, res) => {
         await wallet.save({ session: sess });
         await sess.commitTransaction()
         await sess.endSession()
+    // console.log("REACHED", )
+
         const token = jwt.sign(
             { email: savedUser.email, id: savedUser._id, role: savedUser.role },
             process.env.AccessToken, { expiresIn: "15m" })
         await verifyEmailAddress(email, fullname, uniqueOTP)
 
         return res.status(200).json(
-            { fullname: savedUser.fullname, userId: savedUser._id, token })
+            { email: savedUser.email, fullname: savedUser.fullname, userId: savedUser._id, token })
     } catch(err) {
         await sess.abortTransaction()
-        return res.status(500).json("Internal Server Error") 
+        return res.status(500).json(err.message) 
     }
 }
