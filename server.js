@@ -18,8 +18,10 @@ server.use(express.json())
 server.use(cookieParser())
 
 // server.use(cors({
-//     origin: process.env.FRONTEND_URL,
-//     credentials: true
+//     origin: "*", //[process.env.FRONTEND_URL, "http://192.168.0.171:7070"],
+//     credentials: true,
+//     // methods: ["GET","POST","PUT","DELETE"],
+//     // allowedHeaders: ["Content-Type", "X-Device-UA", "Authorization"],
 // }))
 
 server.use(helmet())
