@@ -186,14 +186,15 @@ export const signup = async (req, res) => {
         });
     // console.log("REACHED", )
 
-        const [wallet, savedUser] = await Promise.all([ userWallet.save({ session: sess }), createdUser.save({ session: sess }) ])
+        const [wallet, savedUser] = await Promise.all(
+            [ userWallet.save().session( sess ), createdUser.save().session( sess ) ]) //changed from wallet.save({ session: sess }) to wallet.save().session( sess )
 
         if(!wallet && !savedUser) {
             return res.status(400).json("Failed to create an account, try again later.")
         }
 
         wallet.userId = savedUser._id
-        await wallet.save({ session: sess });
+        await wallet.save().session( sess ); //changed from wallet.save({ session: sess }) to wallet.save().session( sess )
         await sess.commitTransaction()
         await sess.endSession()
     // console.log("REACHED", )
