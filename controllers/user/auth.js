@@ -117,7 +117,7 @@ export const signup = async (req, res) => {
     try {
         user = await Users.findOne({ email }) //add Promise.all([]) later when username futures is added to create a unique username.
     } catch (error) {
-        return res.status(500).json("Internal Server Error");
+        return res.status(500).json("Internal Server Error")
     }
 
     if(user) {
