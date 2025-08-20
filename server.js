@@ -1,9 +1,9 @@
-import cors from 'cors'
+// import cors from 'cors'
 import 'dotenv/config.js'
 import helmet from 'helmet'
 import express from 'express'
 import compression from 'compression'
-import cookieParser from 'cookie-parser';
+// import cookieParser from 'cookie-parser';
 
 import ConnectDB from './database.js'
 import userRoutes from './routes/user.js'
@@ -15,7 +15,7 @@ const server = express()
 
 server.use(express.json())
 
-server.use(cookieParser()) //comment off later
+// server.use(cookieParser()) //comment off later
 
 // server.use(cors({
 //     origin: "*", //[process.env.FRONTEND_URL, "http://192.168.0.171:7070"],
