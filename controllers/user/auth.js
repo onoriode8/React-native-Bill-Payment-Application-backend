@@ -187,23 +187,21 @@ export const signup = async (req, res) => {
     // console.log("REACHED", )
 
         const [wallet, savedUser] = await Promise.all(
-            [ userWallet.save().session( sess ), createdUser.save().session( sess ) ]) //changed from wallet.save({ session: sess }) to wallet.save().session( sess )
+            [ userWallet.save({ session: sess }), createdUser.save({ session: sess }) ]);
 
         if(!wallet && !savedUser) {
             return res.status(400).json("Failed to create an account, try again later.")
         }
 
         wallet.userId = savedUser._id
-        await wallet.save().session( sess ); //changed from wallet.save({ session: sess }) to wallet.save().session( sess )
+        await wallet.save({ session: sess }); 
         await sess.commitTransaction()
-        await sess.endSession()
-    // console.log("REACHED", )
 
         const token = jwt.sign(
             { email: savedUser.email, id: savedUser._id, role: savedUser.role },
             process.env.AccessToken, { expiresIn: "15m" })
         await verifyEmailAddress(email, fullname, uniqueOTP)
-
+        await sess.endSession()
         return res.status(200).json(
             { email: savedUser.email, fullname: savedUser.fullname, userId: savedUser._id, token })
     } catch(err) {
