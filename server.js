@@ -15,7 +15,7 @@ const server = express()
 
 server.use(express.json())
 
-server.use(cookieParser())
+server.use(cookieParser()) //comment off later
 
 // server.use(cors({
 //     origin: "*", //[process.env.FRONTEND_URL, "http://192.168.0.171:7070"],
