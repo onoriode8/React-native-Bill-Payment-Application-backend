@@ -9,7 +9,7 @@ const rateLimit = expressRateLimit({
     statusCode: 429,
     standardHeaders: false,
     legacyHeaders: false,
-    // keyGenerator: (req, res) => req.body.email || req.body.username
+    keyGenerator: (req, res) => req.body.email || req.body.username
 })
 
 

@@ -27,6 +27,9 @@ server.use(express.json())
 server.use(helmet())
 server.use(compression())
 
+// Enable trust proxy so req.ip uses X-Forwarded-For
+server.set("trust proxy", false);
+
 server.use("/owner", ownerRoute);
 server.use("/user", userRoutes)
 server.use("/admin", adminRoute)

@@ -14,6 +14,7 @@ const authMiddleware = async (req, res, next) => {
         if(!decodedToken) {
             return res.status(401).json("Not Authenticated")
         }
+        
         req.user = { 
             userId: decodedToken.id,
             role: decodedToken.role,  //role of either admin | user
@@ -24,11 +25,10 @@ const authMiddleware = async (req, res, next) => {
         if(!user) return res.status(404).json("User not found");
         next()
     } catch(err) {
-        console.error(err.message)
-        if(err.message === "expires") { //check if the expires is the actual jwt expire token.
+        if(err.message === "jwt expired") {
             return res.status(401).json("Your session as expired.")
         }
-        return res.status(500).json("Internal Server Error")
+        return res.status(500).json("Internal Server Error.")
     }
 }
 

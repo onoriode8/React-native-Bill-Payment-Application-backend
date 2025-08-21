@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 
 
 const userNairaWalletSchema = new mongoose.Schema({
-    balance: { type: Number, default: 0 },
+    balance: { type: Number, default: 0 }, //change to virtualBalance
     TotalFunds: [{
         moneyIn: { type: Number }, //once received
         moneyOut:{ type: Number },

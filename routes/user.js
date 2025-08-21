@@ -15,21 +15,22 @@ import { allTransactionHistory, fundsTransactionHistory,
 import { verifyEmailByOTP } from '../controllers/user/security.js'
 
 
-const router = Router()
+const router = Router();
+
 
 router.post("/signup", check("email").notEmpty().isEmail().normalizeEmail(), 
-    check("password").isLength({ min: 6 }), rateLimit, signup);
+    check("password").isLength({ min: 6 }), rateLimit, signup); //passed
 
 router.post("/login", check("email").notEmpty().isEmail().normalizeEmail(), 
-    check("password").isLength({ min: 6 }), rateLimit, login);
+    check("password").isLength({ min: 6 }), rateLimit, login); //passed
 
-router.get("/user/get/personal/data/:userId", 
-    check("userId").notEmpty().isLength({ min: 6 }), getUserData)
+router.get("/get/personal/data/:userId", 
+    check("userId").notEmpty().isLength({ min: 6 }), authMiddleware, getUserData)
 
-router.post("/verify/email/otp/:userId", check("otpCode").notEmpty().isLength({ min: 6 }), 
-    rateLimit, verifyEmailByOTP);   
+router.post("/verify/email/otp/:userId", check("otpCode").notEmpty(), 
+    rateLimit, authMiddleware, verifyEmailByOTP);   //passed
     
-// routes/webhook.js
+// routes/webhook.js 
 router.post('/webhook', paystackWebhook)
 
 router.post("/transfer/another/user", check("amount").notEmpty(), 

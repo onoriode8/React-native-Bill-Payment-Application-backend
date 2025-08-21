@@ -20,46 +20,53 @@ export const login = async (req, res) => {
     const result = validationResult(req)
     if(!result.isEmpty()) {
         for(const error of result) {
-            console.log("FOR", error)
             return res.status(422).json("Invalid value passed")
         }
     }
 
+    if(username?.includes("@") || username?.includes("/") || username?.includes(".")) {
+        return res.status(400).json("Username not allowed, please use underscore for special character instead.");
+    }
+
     let user;
     try {
-        user = await Users.findOne(email).populate("NairaWallet") //add Promise.all([]) later when username futures is added to create a unique username.
+        user = await Users.findOne({ email }).populate("nairaWallet");
         if(!user) return res.status(404).json("User not found.")
     } catch (error) {
         return res.status(500).json("Internal Server Error")
     }
 
-    console.log("USER Line 36", user) //check if the .populate("NairaWallet") is rendered properly.
-
     const uaString = req.headers['user-agent']
     const parse = uaParser.setUA(uaString).getResult()
+
+    //mobile user-agent retrieved.
+    const mobileIp = req.headers["x-forwarded-for"] || req.connection?.remoteAddress || req.socket?.remoteAddress
+    const location = await axios.get(`https://ipapi.co/${mobileIp}/json/`);
 
     try {
         const isValid = await bcryptjs.compare(password, user.password)
         if(!isValid) return res.status(401).json("Invalid Credentials Entered");
-        const accessToken = jwt.sign({ email: user.email, id: user._id }, process.env.AccessToken, { expiresIn: "15m" })
-        if(!accessToken) return res.status(401).json("Not Authenticated")
         const userEmail = user.email;
         
-        const ip = req.headers["x-forwarded-x"].split(",")[0] || req.connection.remoteAddress || req.socket.remoteAddress //to get the ip address of the device.
-        const locationData = await axios.post(`https://ipapi.co/${ip}/json/`);
-        if(user.loginDetails.ipAddress !== ip) {
+        //for web ip below.
+        // const ip = req.headers["x-forwarded-x"].split(",")[0] || req.connection.remoteAddress || req.socket.remoteAddress //to get the ip address of the device.
+        // const locationData = await axios.post(`https://ipapi.co/${ip}/json/`);
+        if(user.loginDetails.ipAddress !== mobileIp) {
             const accessDevice = {
-                device: parse.device.type,
-                model: parse.device.model,
-                version: parse.os.version,
+                device: deviceName ? deviceName : parse.device.type,
+                model: modelName ? modelName : parse.device.model,
+                version: osVersion ? osVersion : parse.os.version,
             }
             alertSecurity(locationData, userEmail, accessDevice)
         }
         user.password = undefined;
         user.otp = undefined
+        user.security = undefined;
         const token = jwt.sign(
             { email: user.email, userId: user._id, role: user.role },
-            process.env.AccessToken, { expiresIn: "15m" }) //check whether to increase the time from 15m to 30m
+            process.env.AccessToken, { expiresIn: "24hr" });
+        if(!token) return res.status(401).json("Not Authenticated");
+
         if(user.isEmailVerified === false) {
             //generate unique 6 digit otp pin.
             const uniqueOTP = otpGenerator.generate(6, { upperCaseAlphabets: false, lowerCaseAlphabets: false, specialChars: false })
@@ -199,13 +206,13 @@ export const signup = async (req, res) => {
 
         const token = jwt.sign(
             { email: savedUser.email, id: savedUser._id, role: savedUser.role },
-            process.env.AccessToken, { expiresIn: "15m" })
+            process.env.AccessToken, { expiresIn: "24hr" })
         await verifyEmailAddress(email, fullname, uniqueOTP)
         await sess.endSession()
         return res.status(200).json(
             { email: savedUser.email, fullname: savedUser.fullname, userId: savedUser._id, token })
     } catch(err) {
         await sess.abortTransaction()
-        return res.status(500).json(err.message) 
+        return res.status(500).json("Internal Server Error") 
     }
 }
