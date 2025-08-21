@@ -14,12 +14,12 @@ const userSchema = new mongoose.Schema({
     },
     loginDetails: {
         date: { type: Date, required: true, trim: true },
-        location: { type: String, required: true, trim: true }, // i.e => city, state, country.
-        ipAddress: { type: String, required: true, trim: true },
+        location: { type: String, trim: true }, // i.e => city, state, country.
+        ipAddress: { type: String, trim: true },
         accessDevice: [{
-            device: { type: String, required: true, trim: true },
-            model: { type: String, required: true, trim: true },
-            version: { type: String, required: true, trim: true }
+            device: { type: String, trim: true },
+            model: { type: String, trim: true },
+            version: { type: String, trim: true }
         }]
     },
     fullname: { type: String, required: true, trim: true },
