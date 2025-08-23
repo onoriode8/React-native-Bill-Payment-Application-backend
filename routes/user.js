@@ -12,7 +12,7 @@ import { buyAirtimeSubscription, buyDataSubscription, gotvSubscription,
     dstvSubscription, electricityBillSubscription} from '../controllers/user/subscription.js'
 import { allTransactionHistory, fundsTransactionHistory, 
     networkTransactionHistory, tvTransactionHistory } from '../controllers/user/transactionshistory.js'
-import { verifyEmailByOTP } from '../controllers/user/security.js'
+import { verifyEmailByOTP, verifyCodeByEmail, sendEmailToResetPassword, resetPassword } from '../controllers/user/security.js'
 
 
 const router = Router();
@@ -29,7 +29,19 @@ router.get("/get/personal/data/:userId",
 
 router.post("/verify/email/otp/:userId", check("otpCode").notEmpty(), 
     rateLimit, authMiddleware, verifyEmailByOTP);   //passed
+
+router.post("/forgot/password", check("email").notEmpty().isEmail().normalizeEmail(),
+    rateLimit, sendEmailToResetPassword);  //passed
     
+router.post("/email/verify/code", check("otpCode").notEmpty(),
+    check("email").notEmpty().isEmail().normalizeEmail(),
+    rateLimit, verifyCodeByEmail); //passed
+
+router.patch("/reset/password", check("password").notEmpty().isLength({ min: 8 }),
+    check("confirmPassword").notEmpty().isLength({ min: 8 }),
+    check("email").notEmpty().isEmail().normalizeEmail(), 
+    rateLimit, resetPassword); //passed
+
 // routes/webhook.js 
 router.post('/webhook', paystackWebhook)
 
