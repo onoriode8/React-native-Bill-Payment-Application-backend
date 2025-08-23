@@ -10,6 +10,7 @@ import Users from '../../model/user/user.js'
 import NairaWallet from '../../model/user/nairaWallet.js'
 import { createPaystackVirtualAccount } from '../../util/paystack.js'
 import { alertSecurity, verifyEmailAddress } from '../../util/security.js'
+import { generateOTP } from '../../util/security.js';
 
 
 const uaParser = new UAParser()
@@ -19,7 +20,7 @@ export const login = async (req, res) => {
     const { email, username, password } = req.body
     const result = validationResult(req)
     if(!result.isEmpty()) {
-        for(const error of result) {
+        for(const error of result.errors) {
             return res.status(422).json("Invalid value passed")
         }
     }
@@ -37,11 +38,11 @@ export const login = async (req, res) => {
     }
 
     const uaString = req.headers['user-agent']
-    const parse = uaParser.setUA(uaString).getResult()
+    const parse = uaParser.setUA(uaString).getResult();
 
     //mobile user-agent retrieved.
-    // const mobileIp = req.headers["x-forwarded-for"] || req.connection?.remoteAddress || req.socket?.remoteAddress
-    // const location = await axios.get(`https://ipapi.co/${mobileIp}/json/`);
+    const mobileIp = req.headers["x-forwarded-for"] || req.connection?.remoteAddress || req.socket?.remoteAddress
+    const location = await axios.get(`https://ipapi.co/${mobileIp}/json/`);
 
     try {
         const isValid = await bcryptjs.compare(password, user.password)
@@ -59,32 +60,22 @@ export const login = async (req, res) => {
             }
             alertSecurity(locationData, userEmail, accessDevice)
         }
-        user.password = undefined;
-        user.otp = undefined
-        user.security = undefined;
         const token = jwt.sign(
             { email: user.email, userId: user._id, role: user.role },
             process.env.AccessToken, { expiresIn: "24hr" });
         if(!token) return res.status(401).json("Not Authenticated");
 
         if(user.isEmailVerified === false) {
-            //generate unique 6 digit otp pin.
-            const uniqueOTP = otpGenerator.generate(6, { upperCaseAlphabets: false, lowerCaseAlphabets: false, specialChars: false })
-            const date = new Date(Date.now() + 15 * 60 * 1000) //15 minutes
-            const formattedToString = date.toString()
-            const otpExpiresIn = formattedToString.split(" ")[4] //only hrs, mins & secs extracted here
-            const hashedUniqueOTP = await bcryptjs.hash(uniqueOTP, 12);
-            user.otp = {
-                otpCode: hashedUniqueOTP,
-                expiresIn: otpExpiresIn
-            }
-            await user.save()
+            const { uniqueOTP } = await generateOTP(user); //generate otp 6 digit unique code.
             await verifyEmailAddress(user.email, user.fullname, uniqueOTP)
-            return res.status(200).json(user.isEmailVerified)
+            return res.status(200).json({ isEmailVerified: user.isEmailVerified });
         }
-        res.status(200).json(user, token)
+        user.password = undefined;
+        user.otp = undefined
+        user.security = undefined;
+        return res.status(200).json(user, token)
     } catch(err) {
-        return res.status(500).json("Internal Server Error")
+        return res.status(500).json("Something went wrong, please try again later.")
     }
 }
 
@@ -116,7 +107,7 @@ export const signup = async (req, res) => {
     const uaString = req.headers['user-agent'] 
     const parse = uaParser.setUA(uaString).getResult()
 
-    const Address = "64.145.93.168"
+    // const Address = "64.145.93.168"
     const ip = req.headers["x-forwarded-x"]?.split(',')[0] || req.connection.remoteAddress || req.socket.remoteAddress 
     const mobileIp = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || req.socket?.remoteAddress
     const location = await axios.get(`https://ipapi.co/${mobileIp}/json/`);
@@ -207,12 +198,12 @@ export const signup = async (req, res) => {
         const token = jwt.sign(
             { email: savedUser.email, id: savedUser._id, role: savedUser.role },
             process.env.AccessToken, { expiresIn: "24hr" })
-        await verifyEmailAddress(email, fullname, uniqueOTP)
+        await verifyEmailAddress(email, savedUser.fullname, uniqueOTP)
         await sess.endSession()
         return res.status(200).json(
             { email: savedUser.email, fullname: savedUser.fullname, userId: savedUser._id, token })
     } catch(err) {
         await sess.abortTransaction()
-        return res.status(500).json("Internal Server Error") 
+        return res.status(500).json(err.message) 
     }
 }
