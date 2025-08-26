@@ -52,6 +52,13 @@ export const login = async (req, res) => {
         //for web ip below.
         // const ip = req.headers["x-forwarded-x"].split(",")[0] || req.connection.remoteAddress || req.socket.remoteAddress //to get the ip address of the device.
         // const locationData = await axios.post(`https://ipapi.co/${ip}/json/`);
+
+        const osName = mobileUserAgent.split(" ")[0] //os => i.e IOS || Android
+        const brand = mobileUserAgent.split(" ")[1] //brand => 1.e Apple || Samsung || Nokia || etc. 
+        const modelName = `${mobileUserAgent.split(" ")[2]} ${mobileUserAgent.split(" ")[3]} ${mobileUserAgent.split(" ")[4]}`//modelName => 1.e iPhone XS Max || Samsung S 24 Ultra || IPhone x || etc. 
+        const osVersion = mobileUserAgent.split(" ")[5] //osVersion => 1.e Apple || Samsung || Nokia || etc. 
+        const deviceName = mobileUserAgent.split(" ")[6] //deviceName => 1.e same as brand Apple || Samsung || Nokia || etc. 
+
         if(user.loginDetails.ipAddress !== mobileIp) {
             const accessDevice = {
                 device: deviceName ? deviceName : parse.device.type,
@@ -76,7 +83,7 @@ export const login = async (req, res) => {
         user.security = undefined;
         return res.status(200).json(user, token)
     } catch(err) {
-        return res.status(500).json(err.message) //"Something went wrong, please try again later."
+        return res.status(500).json("Something went wrong, please try again later.") 
     }
 }
 
