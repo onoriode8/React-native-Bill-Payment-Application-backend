@@ -42,7 +42,7 @@ export const login = async (req, res) => {
 
     //mobile user-agent retrieved.
     const mobileIp = req.headers["x-forwarded-for"] || req.connection?.remoteAddress || req.socket?.remoteAddress
-    const location = await axios.get(`https://ipapi.co/${mobileIp}/json/`);
+    const locationData = await axios.get(`https://ipapi.co/${mobileIp}/json/`);
 
     try {
         const isValid = await bcryptjs.compare(password, user.password)
