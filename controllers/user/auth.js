@@ -83,7 +83,7 @@ export const login = async (req, res) => {
         user.security = undefined;
         return res.status(200).json(user, token)
     } catch(err) {
-        return res.status(500).json("Something went wrong, please try again later.") 
+        return res.status(500).json(err.message) //"Something went wrong, please try again later."
     }
 }
 
