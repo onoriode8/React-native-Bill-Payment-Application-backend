@@ -19,6 +19,8 @@ const uaParser = new UAParser()
 export const login = async (req, res) => {
     const { email, username, password } = req.body
     const result = validationResult(req)
+    const mobileUserAgent = req.headers["x-device-ua"]
+
     if(!result.isEmpty()) {
         for(const error of result.errors) {
             return res.status(422).json("Invalid value passed")
