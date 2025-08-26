@@ -9,6 +9,7 @@ import sendEmailFunc from './sendingEmail.js'
 
 
 
+
 export const alertSecurity = async (location, userEmail, accessDevice) => {
     console.log("LOCATION", location)
     console.log("USER-EMAIL", userEmail)

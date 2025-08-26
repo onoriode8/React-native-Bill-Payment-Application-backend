@@ -61,14 +61,15 @@ export const login = async (req, res) => {
             alertSecurity(locationData, userEmail, accessDevice)
         }
         const token = jwt.sign(
-            { email: user.email, userId: user._id, role: user.role },
-            process.env.AccessToken, { expiresIn: "24hr" });
+            { email: user.email, id: user._id, role: user.role },
+            process.env.AccessToken, { expiresIn: "24hr" })
         if(!token) return res.status(401).json("Not Authenticated");
-
         if(user.isEmailVerified === false) {
             const { uniqueOTP } = await generateOTP(user); //generate otp 6 digit unique code.
             await verifyEmailAddress(user.email, user.fullname, uniqueOTP)
-            return res.status(200).json({ isEmailVerified: user.isEmailVerified });
+            
+            return res.status(200).json(
+                { email: user.email, isEmailVerified: user.isEmailVerified, token });
         }
         user.password = undefined;
         user.otp = undefined

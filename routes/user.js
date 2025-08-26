@@ -24,8 +24,7 @@ router.post("/signup", check("email").notEmpty().isEmail().normalizeEmail(),
 router.post("/login", check("email").notEmpty().isEmail().normalizeEmail(), 
     check("password").isLength({ min: 6 }), rateLimit, login); //passed
 
-router.get("/get/personal/data/:userId", 
-    check("userId").notEmpty().isLength({ min: 6 }), authMiddleware, getUserData)
+router.get("/get/personal/data/:userId", authMiddleware, getUserData) //passed
 
 router.post("/verify/email/otp/:userId", check("otpCode").notEmpty(), 
     rateLimit, authMiddleware, verifyEmailByOTP);   //passed
@@ -62,7 +61,7 @@ router.post("/pay/dstv/subscription", check("amount").notEmpty(), authMiddleware
 
 router.post("/pay/electricity/bill", check("amount").notEmpty(), authMiddleware, electricityBillSubscription);
 
-router.get("/bank/details", authMiddleware, getUserBankDetails);
+router.get("/bank/details/:id", authMiddleware, getUserBankDetails);
 
 // router.get("/reward", authMiddleware, reward);
 

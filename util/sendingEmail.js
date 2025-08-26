@@ -1,8 +1,10 @@
 import nodemailer from 'nodemailer'
 
 
+
 const sendEmailFunc = async (userEmail, subject, message, htmlContent) => {
     try {
+
         const transporter = nodemailer.createTransport({
             service: process.env.GOGGLE_SERVICE, 
             auth: {

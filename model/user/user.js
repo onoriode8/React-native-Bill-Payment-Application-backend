@@ -1,7 +1,6 @@
 import mongoose from 'mongoose'
 
 
-
 const userSchema = new mongoose.Schema({
     role: { type: String, required: true, trim: true }, // user | admin
     createdAt: { type: Date, required: true, trim: true },
@@ -22,6 +21,7 @@ const userSchema = new mongoose.Schema({
             version: { type: String, trim: true }
         }]
     },
+    //profileUrl: { type: String, trim: true },
     fullname: { type: String, required: true, trim: true },
     username: { type: String, trim: true }, //add require and unique if you add username on ui later
     email: { type: String, required: true, lowercase: true, unique: true, trim: true },
