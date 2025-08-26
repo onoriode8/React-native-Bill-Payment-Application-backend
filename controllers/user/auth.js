@@ -78,7 +78,7 @@ export const login = async (req, res) => {
             await verifyEmailAddress(user.email, user.fullname, uniqueOTP)
             
             return res.status(200).json(
-                { email: user.email, isEmailVerified: user.isEmailVerified, token });
+                { email: user.email, isEmailVerified: user.isEmailVerified, token, userId: user._id });
         }
         user.password = undefined;
         user.otp = undefined
