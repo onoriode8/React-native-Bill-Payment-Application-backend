@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 
+
 import Users from '../model/user/user.js'
 
 
@@ -25,10 +26,13 @@ const authMiddleware = async (req, res, next) => {
         if(!user) return res.status(404).json("User not found");
         next()
     } catch(err) {
+        if(err.name === "SyntaxError") {
+            return res.status(422).json("Invalid token provided");
+        }
         if(err.message === "jwt expired") {
             return res.status(401).json("Your session as expired.")
         }
-        return res.status(500).json("Internal Server Error.")
+        return res.status(500).json("Sorry something went wrong.")
     }
 }
 

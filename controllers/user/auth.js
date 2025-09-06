@@ -44,48 +44,60 @@ export const login = async (req, res) => {
 
     //mobile user-agent retrieved.
     const mobileIp = req.headers["x-forwarded-for"] || req.connection?.remoteAddress || req.socket?.remoteAddress
-    const locationData = await axios.get(`https://ipapi.co/${mobileIp}/json/`);
+
+    //for web ip below.
+    // const ip = req.headers["x-forwarded-x"].split(",")[0] || req.connection.remoteAddress || req.socket.remoteAddress 
+    const ip = req.headers["x-forwarded-x"] || req.connection.remoteAddress || req.socket.remoteAddress
 
     try {
         const isValid = await bcryptjs.compare(password, user.password)
         if(!isValid) return res.status(401).json("Invalid Credentials Entered");
         const userEmail = user.email;
         
-        //for web ip below.
-        // const ip = req.headers["x-forwarded-x"].split(",")[0] || req.connection.remoteAddress || req.socket.remoteAddress //to get the ip address of the device.
-        // const locationData = await axios.post(`https://ipapi.co/${ip}/json/`);
 
-        const osName = mobileUserAgent.split(" ")[0] //os => i.e IOS || Android
-        const brand = mobileUserAgent.split(" ")[1] //brand => 1.e Apple || Samsung || Nokia || etc. 
-        const modelName = `${mobileUserAgent.split(" ")[2]} ${mobileUserAgent.split(" ")[3]} ${mobileUserAgent.split(" ")[4]}`//modelName => 1.e iPhone XS Max || Samsung S 24 Ultra || IPhone x || etc. 
-        const osVersion = mobileUserAgent.split(" ")[5] //osVersion => 1.e Apple || Samsung || Nokia || etc. 
-        const deviceName = mobileUserAgent.split(" ")[6] //deviceName => 1.e same as brand Apple || Samsung || Nokia || etc. 
+        if(user.loginDetails.ipAddress !== mobileIp || user.loginDetails.ipAddress !== ip) {
+            //mobile user-agent retrieved.
+            const locationData = await axios.get(`https://ipapi.co/${mobileIp}/json/`);
+            //for web ip below.
+            const webLocationData = await axios.post(`https://ipapi.co/${ip}/json/`);
 
-        if(user.loginDetails.ipAddress !== mobileIp) {
+            const osName = mobileUserAgent.split(" ")[0] //os => i.e IOS || Android
+            const brand = mobileUserAgent.split(" ")[1] //brand => 1.e Apple || Samsung || Nokia || etc. 
+            const modelName = `${mobileUserAgent.split(" ")[2]} ${mobileUserAgent.split(" ")[3]} ${mobileUserAgent.split(" ")[4]}`//modelName => 1.e iPhone XS Max || Samsung S 24 Ultra || IPhone x || etc. 
+            const osVersion = mobileUserAgent.split(" ")[5] //osVersion => 1.e Apple || Samsung || Nokia || etc. 
+            const deviceName = mobileUserAgent.split(" ")[6] //deviceName => 1.e same as brand Apple || Samsung || Nokia || etc. 
+
             const accessDevice = {
                 device: deviceName ? deviceName : parse.device.type,
                 model: modelName ? modelName : parse.device.model,
                 version: osVersion ? osVersion : parse.os.version,
             }
+            const location = locationData ? locationData : webLocationData
             alertSecurity(locationData, userEmail, accessDevice)
         }
-        const token = jwt.sign(
-            { email: user.email, id: user._id, role: user.role },
-            process.env.AccessToken, { expiresIn: "24hr" })
-        if(!token) return res.status(401).json("Not Authenticated");
+        
         if(user.isEmailVerified === false) {
             const { uniqueOTP } = await generateOTP(user); //generate otp 6 digit unique code.
             await verifyEmailAddress(user.email, user.fullname, uniqueOTP)
-            
+            const token = jwt.sign(
+             { email: user.email, id: user._id, role: user.role },
+             process.env.AccessToken, { expiresIn: "30m" });
+
+            if(!token) return res.status(401).json("Not Authenticated");
             return res.status(200).json(
                 { email: user.email, isEmailVerified: user.isEmailVerified, token, userId: user._id });
         }
         user.password = undefined;
         user.otp = undefined
         user.security = undefined;
+        const token = jwt.sign(
+            { email: user.email, id: user._id, role: user.role },
+            process.env.AccessToken, { expiresIn: "24hr" });
+            
+        if(!token) return res.status(401).json("Not Authenticated");
         return res.status(200).json(user, token)
     } catch(err) {
-        return res.status(500).json(err.message) //"Something went wrong, please try again later."
+        return res.status(500).json("Something went wrong, please try again later.")
     }
 }
 
@@ -168,6 +180,7 @@ export const signup = async (req, res) => {
             isMFA: false,
             username: username, //username later
             fullname: fullname,
+            profileUrl: '',
             phoneNumber: Number(phoneNumber),
             email: email,
             otp: {

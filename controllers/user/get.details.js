@@ -4,7 +4,7 @@ import Users from "../../model/user/user.js"
 
 
 export const getProfile = async (req, res) => {
-    const userId = req.params.userId;
+    const userId = req.params.id;
     const result = validationResult(req);
     if(!result.isEmpty()) {
         for(const error of result.errors) {
@@ -16,17 +16,26 @@ export const getProfile = async (req, res) => {
         if(!user) {
             return res.status(404).json("User not found");
         }
+
         if(user._id.toString() !== userId) {
             return res.status(401).json("Access denied.");
         }
+
+        user.otp = undefined;
+        user.password = undefined;
+        user.nairaWallet = undefined
+        user.beneficiaries = undefined
+        user.subscriptionHistory = undefined
+        user.fundsWalletTransactionHistory = undefined
+        return res.status(200).json(user);
     } catch (error) {
-        return res.status(500).json("Internal Server Error.")
+        return res.status(500).json('Something went wrong, Please try again later.');
     }
 }
 
 
 export const getUserBankDetails = async (req, res) => {
-     const userId = req.params.id;
+    const userId = req.params.id;
     const result = validationResult(req);
     if(!result.isEmpty()) {
         for(const error of result.errors) {
@@ -39,16 +48,15 @@ export const getUserBankDetails = async (req, res) => {
             return res.status(404).json("User not found");
         }
         if(user._id.toString() !== userId) {
-        console.log("USER DATA", user._id.toString(), userId)
-            return res.status(401).json("Access denied.");
+            return res.status(401).json("Access denied. You are not Authenticated.");
         }
-        console.log("USER", user)
+        user.nairaWallet.paystackCustomerCode = undefined;
+        user.nairaWallet.paystackVirtualAccount.reference = undefined
         return res.status(200).json(user.nairaWallet)
     } catch (error) {
-        return res.status(500).json("Internal Server Error.")
+        return res.status(500).json("Internal Server Error.");
     }
 }
-
 
 
 export const getUserData = async (req, res) => {

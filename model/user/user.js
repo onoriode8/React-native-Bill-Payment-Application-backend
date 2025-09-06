@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
             version: { type: String, trim: true }
         }]
     },
-    //profileUrl: { type: String, trim: true },
+    profileUrl: { type: String, trim: true },
     fullname: { type: String, required: true, trim: true },
     username: { type: String, trim: true }, //add require and unique if you add username on ui later
     email: { type: String, required: true, lowercase: true, unique: true, trim: true },
@@ -31,7 +31,8 @@ const userSchema = new mongoose.Schema({
     nairaWallet: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "NairaWallet"},
     // referra: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Referra"},
     subscriptionHistory: [ { type: mongoose.Schema.Types.ObjectId, ref: "TransactionHistory" } ],
-    fundsWalletTransactionHistory: [ { type: mongoose.Schema.Types.ObjectId, ref: "TransactionHistory" } ]
+    allTransactionHistory: [ { type: mongoose.Schema.Types.ObjectId, ref: "AllTransactionHistory" } ],
+    fundsWalletTransactionHistory: [ { type: mongoose.Schema.Types.ObjectId, ref: "WalletTransaction" } ]
 })
 
 

@@ -1,29 +1,15 @@
 
 
 
-const roleBasedAccess = async (args) => {
-    try {
-        if(args.role === "User") {
-            // return res.status(400).json("Invalid indentity passed.")
+const roleBasedAccess = (args) => {
+    return (req, res, next) => {
+        console.log("ROLE", args)
+        console.log(typeof args.includes(req.user.role))
+        if(args.includes(req.user.role) === false) {
+            console.log("CHECK", args.includes(req.user.role))
+            return res.status(403).json("Forbidden, not allowed.")
         }
-        // const decodedToken = jwt.verify(token, process.env.AccessToken)
-        // if(!decodedToken) {
-        //     return res.status(401).json("Not Authenticated")
-        // }
-        // req.user = {
-        //     userId: decodedToken.id,
-        //     email: decodedToken.email,
-        //     // username: decodedToken.username
-        // }
-        // const user = await Users.findById(req.user.userId)
-        // if(!user) return res.status(404).json("User not found");
         next()
-    } catch(err) {
-        console.error(err.message)
-        // if(err.message === "expires") { //check if the expires is the actual jwt expire token.
-        //     return res.status(401).json("Your session as expired.")
-        // }
-        // return res.status(500).json("Internal Server Error")
     }
 }
 
