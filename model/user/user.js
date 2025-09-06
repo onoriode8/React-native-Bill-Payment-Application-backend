@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema({
     // referra: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Referra"},
     subscriptionHistory: [ { type: mongoose.Schema.Types.ObjectId, ref: "TransactionHistory" } ],
     allTransactionHistory: [ { type: mongoose.Schema.Types.ObjectId, ref: "AllTransactionHistory" } ],
-    fundsWalletTransactionHistory: [ { type: mongoose.Schema.Types.ObjectId, ref: "WalletTransaction" } ]
+    fundsWalletTransactionHistory: [ { type: mongoose.Schema.Types.ObjectId, ref: "FundsWalletTransactionHistory" } ]
 })
 
 
