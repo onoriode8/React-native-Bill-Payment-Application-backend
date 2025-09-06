@@ -13,7 +13,7 @@ const userWalletTransactionSchema = new mongoose.Schema({
 })
 
 
-const userWalletTransactionModel = mongoose.model("WalletTransaction", userWalletTransactionSchema)
+const userWalletTransactionModel = mongoose.model("FundsWalletTransactionHistory", userWalletTransactionSchema)
 
 
 
