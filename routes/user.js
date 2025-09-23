@@ -13,7 +13,7 @@ import { buyAirtimeSubscription, buyDataSubscription, gotvSubscription,
 import { allTransactionHistory, fundsTransactionHistory, 
     networkTransactionHistory, tvTransactionHistory } from '../controllers/user/transactionshistory.js'
 import { verifyEmailByOTP, verifyCodeByEmail, sendEmailToResetPassword, resetPassword } from '../controllers/user/security.js'
-import { verifyUserPaymentPin } from '../controllers/user/pins.js';
+import { createPaymentPin, verifyUserPaymentPin } from '../controllers/user/pins.js';
 
 
 const router = Router();
@@ -92,6 +92,8 @@ router.get("/credit/debit/history/:id", authMiddleware, roleBasedAccess(["User"]
 router.get("/airtime/data/history/:id", authMiddleware, roleBasedAccess(["User"]), networkTransactionHistory);
 
 router.get("/tv/history/:id", authMiddleware, roleBasedAccess(["User"]), tvTransactionHistory);
+
+router.patch("/create/new/payment/pin/:userId", authMiddleware, roleBasedAccess(["User"]), createPaymentPin);
 
 router.post("/verify/payment/pin/:userId", authMiddleware, roleBasedAccess(["User"]), verifyUserPaymentPin);
 
