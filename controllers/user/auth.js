@@ -178,6 +178,7 @@ export const signup = async (req, res) => {
             createdAt: new Date(Date.now()),
             password: hashedPassword,
             isMFA: false,
+            isPaymentPinSet: false,
             username: username, //username later
             fullname: fullname,
             profileUrl: '',
@@ -199,7 +200,7 @@ export const signup = async (req, res) => {
                 ipAddress: location.data.ip,
             },
             nairaWallet: userWallet._id,
-            security: null,
+            security: userWallet._id,
             // referra: ,
             beneficiaries: [],
             subscriptionHistory: [],
