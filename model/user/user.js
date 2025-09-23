@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
     createdAt: { type: Date, required: true, trim: true },
     password: { type: String, required: true, trim: true },
     isMFA: { type: Boolean, required: true },
+    isPaymentPinSet: { type: Boolean, required: true },
     isEmailVerified: { type: Boolean, required: true },
     otp: {
         otpCode: { type: String, required: true, trim: true },
