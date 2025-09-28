@@ -13,7 +13,9 @@ import { buyAirtimeSubscription, buyDataSubscription, gotvSubscription,
 import { allTransactionHistory, fundsTransactionHistory, 
     networkTransactionHistory, tvTransactionHistory } from '../controllers/user/transactionshistory.js'
 import { verifyEmailByOTP, verifyCodeByEmail, sendEmailToResetPassword, resetPassword } from '../controllers/user/security.js'
-import { createPaymentPin, verifyUserPaymentPin } from '../controllers/user/pins.js';
+import { createPaymentPin, verifyUserPaymentPin, ResetPaymentPin, changePaymentPin } from '../controllers/user/pins.js';
+import { changeAppPassword, ResetAppPassword } from '../controllers/user/app-password.js';
+
 
 
 const router = Router();
@@ -93,9 +95,33 @@ router.get("/airtime/data/history/:id", authMiddleware, roleBasedAccess(["User"]
 
 router.get("/tv/history/:id", authMiddleware, roleBasedAccess(["User"]), tvTransactionHistory);
 
-router.patch("/create/new/payment/pin/:userId", authMiddleware, roleBasedAccess(["User"]), createPaymentPin);
+router.patch("/create/new/payment/pin/:userId", rateLimit, check("newPaymentPin").notEmpty(), authMiddleware, roleBasedAccess(["User"]), createPaymentPin);//passed
 
-router.post("/verify/payment/pin/:userId", authMiddleware, roleBasedAccess(["User"]), verifyUserPaymentPin);
+router.post("/verify/payment/pin/:userId", rateLimit, authMiddleware, roleBasedAccess(["User"]), verifyUserPaymentPin); //passed.
+
+router.patch("/reset/payment/pin/:userId", rateLimit,
+    check("formattedNewPaymentPin").notEmpty().isLength({ min: 4 }),
+    check("formattedConfirmedPaymentPin").notEmpty().isLength({ min: 4 }),
+    authMiddleware, roleBasedAccess(["User"]), ResetPaymentPin); //passed.
+
+router.patch("/change/payment/pin/:userId", rateLimit, 
+    check("formattedOldPaymentPin").notEmpty().isLength({ min: 4 }),
+    check("formattedNewPaymentPin").notEmpty().isLength({ min: 4 }),
+    check("formattedConfirmedPaymentPin").notEmpty().isLength({ min: 4 }),
+    authMiddleware, roleBasedAccess(["User"]), changePaymentPin);
+
+//change password inside app
+router.patch("/change/app/password/:userId", rateLimit,
+    check("oldAppPassword").notEmpty().isLength({ min: 6 }), 
+    check("newAppPassword").notEmpty().isLength({ min: 6 }), 
+    check("confirmedAppPassword").notEmpty().isLength({ min: 6 }),
+    authMiddleware, roleBasedAccess(["User"]), changeAppPassword);
+
+//reset app password inside app
+router.patch("/reset/app/password/:userId", rateLimit,
+    check("newAppPassword").notEmpty().isLength({ min: 6 }), 
+    check("confirmedAppPassword").notEmpty().isLength({ min: 6 }),
+    authMiddleware, roleBasedAccess(["User"]), ResetAppPassword);
 
 //add other routes here
 

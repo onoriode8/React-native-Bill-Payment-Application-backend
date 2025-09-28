@@ -1,20 +1,19 @@
 import mongoose from "mongoose";
 
 
-const securitySchema = new mongoose({
-    paymentPin: { type: Number, required: true, trim: true  },
+const securitySchema = new mongoose.Schema({
+    paymentPin: { type: String, required: true, trim: true  },
     MFA: [{
-        baseCode: { type: String, required: true, trim: true },
-        secretKey: { type: String, required: true, trim: true },
-        // secretKey: { type: String, required: true, trim: true }
+        baseCode: { type: String, trim: true },
+        secretKey: { type: String, trim: true },
     }],
-    passkey: [{
+    // passkey: [{
 
-    }],
-    faceId: [{
+    // }],
+    // faceId: [{
 
-    }],
-    creatorId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Users"}
+    // }],
+    creatorId: { type: mongoose.Schema.Types.ObjectId, ref: "Users" }
 });
 
 

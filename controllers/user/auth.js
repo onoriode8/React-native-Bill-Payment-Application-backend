@@ -8,6 +8,7 @@ import { startSession } from 'mongoose'
 
 import Users from '../../model/user/user.js'
 import NairaWallet from '../../model/user/nairaWallet.js'
+import UserSecurity from '../../model/user/security.js'
 import { createPaystackVirtualAccount } from '../../util/paystack.js'
 import { alertSecurity, verifyEmailAddress } from '../../util/security.js'
 import { generateOTP } from '../../util/security.js';
@@ -89,7 +90,10 @@ export const login = async (req, res) => {
         }
         user.password = undefined;
         user.otp = undefined
-        user.security = undefined;
+        user.beneficiaries = undefined
+        user.subscriptionHistory = undefined
+        user.allTransactionHistory = undefined
+        user.fundsWalletTransactionHistory = undefined
         const token = jwt.sign(
             { email: user.email, id: user._id, role: user.role },
             process.env.AccessToken, { expiresIn: "24hr" });
@@ -97,7 +101,7 @@ export const login = async (req, res) => {
         if(!token) return res.status(401).json("Not Authenticated");
         return res.status(200).json(user, token)
     } catch(err) {
-        return res.status(500).json("Something went wrong, please try again later.")
+        return res.status(500).json("Something went wrong, please try again later.");
     }
 }
 
@@ -157,6 +161,22 @@ export const signup = async (req, res) => {
         },
         userId: null
     })
+    const defaultPin = "1234"
+    const hashedPin = await bcryptjs.hash(defaultPin, 12)
+    const userSecurity = new UserSecurity({
+        paymentPin: hashedPin,
+        MFA: [{
+            baseCode: null,
+            secretKey: null,
+        }],
+        // passkey: [{
+
+        // }],
+        // faceId: [{
+
+        // }],
+        creatorId: null
+    })
     
     let sess
     try {
@@ -166,7 +186,6 @@ export const signup = async (req, res) => {
         const date = new Date(Date.now() + 15 * 60 * 1000) //15 minutes
         const formattedToString = date.toString()
         const otpExpiresIn = formattedToString.split(" ")[4] //only hrs, mins & secs extracted here
-    // console.log("REACHED", )
 
         sess = await startSession()
         sess.startTransaction()
@@ -200,34 +219,38 @@ export const signup = async (req, res) => {
                 ipAddress: location.data.ip,
             },
             nairaWallet: userWallet._id,
-            security: userWallet._id,
+            security: userSecurity._id,
             // referra: ,
             beneficiaries: [],
             subscriptionHistory: [],
             fundsWalletTransactionHistory: []
         });
-    // console.log("REACHED", )
 
-        const [wallet, savedUser] = await Promise.all(
-            [ userWallet.save({ session: sess }), createdUser.save({ session: sess }) ]);
+        const [wallet, savedUser, security] = 
+        await Promise.all([userWallet.save({ session: sess }), createdUser.save({ session: sess }), userSecurity.save({ session: sess })]);
 
         if(!wallet && !savedUser) {
             return res.status(400).json("Failed to create an account, try again later.")
         }
 
         wallet.userId = savedUser._id
-        await wallet.save({ session: sess }); 
+        security.creatorId = savedUser._id
+        // savedUser.security = savedUser._id
+        await Promise.all([ wallet.save({ session: sess }), security.save({ session: sess }) ]); 
         await sess.commitTransaction()
 
         const token = jwt.sign(
             { email: savedUser.email, id: savedUser._id, role: savedUser.role },
             process.env.AccessToken, { expiresIn: "24hr" })
+
         await verifyEmailAddress(email, savedUser.fullname, uniqueOTP)
         await sess.endSession()
         return res.status(200).json(
-            { email: savedUser.email, fullname: savedUser.fullname, userId: savedUser._id, token })
+            { email: savedUser.email,
+                fullname: savedUser.fullname, 
+                userId: savedUser._id, token })
     } catch(err) {
         await sess.abortTransaction()
-        return res.status(500).json(err.message) 
+        return res.status(500).json("Something went wrong");
     }
 }
