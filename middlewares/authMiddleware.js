@@ -20,7 +20,7 @@ const authMiddleware = async (req, res, next) => {
             userId: decodedToken.id,
             role: decodedToken.role,  //role of either admin | user
             email: decodedToken.email,
-            // username: decodedToken.username
+            username: decodedToken.username
         }
         const user = await Users.findById(req.user.userId)
         if(!user) return res.status(404).json("User not found");

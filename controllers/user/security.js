@@ -1,4 +1,4 @@
-import bcryptjs from 'bcryptjs'
+import bcrypt from 'bcrypt'
 import otpGenerator from 'otp-generator'
 import { validationResult } from 'express-validator'
 
@@ -39,7 +39,7 @@ export const verifyEmailByOTP = async (req, res) => {
             return res.status(419).json("Code Expired, login to continue.")
         }
  
-        const isValid = await bcryptjs.compare(code, user.otp.otpCode) 
+        const isValid = await bcrypt.compare(code, user.otp.otpCode) 
         if(!isValid) return res.status(422).json("Invalid code entered.");
         user.isEmailVerified = true
         await user.save()
@@ -116,7 +116,7 @@ export const verifyCodeByEmail = async (req, res) => {
             return res.status(419).json("Code Expired, try again later.")
         }
  
-        const isValid = await bcryptjs.compare(otpCode, user.otp.otpCode) 
+        const isValid = await bcrypt.compare(otpCode, user.otp.otpCode) 
         if(!isValid) return res.status(422).json("Invalid code entered.");
         return res.status(200).json(user.email); //now give access to user to enter new password.
     } catch (error) {
@@ -143,7 +143,7 @@ export const resetPassword = async (req, res) => {
     try {
         const user = await Users.findOne({ email })
         if(!user) return res.status(404).json("User not found");
-        const hashedPassword = await bcryptjs.hash(password, 12);
+        const hashedPassword = await bcrypt.hash(password, 12);
         user.password = hashedPassword;
         await user.save();
         const subject = `Your BillQuick Password Was Reset`

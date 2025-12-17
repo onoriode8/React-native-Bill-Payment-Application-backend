@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer'
 import speakeasy from 'speakeasy'
 import qrCode from 'qrcode'
-import bcryptjs from 'bcryptjs'
+import bcrypt from 'bcrypt'
 import otpGenerator from 'otp-generator'
 
 // import Users from '../model/user/user.js'
@@ -75,7 +75,7 @@ export const generateOTP = async (user) => {
         const date = new Date(Date.now() + 15 * 60 * 1000) //15 minutes
         const formattedToString = date.toString()
         const otpExpiresIn = formattedToString.split(" ")[4] //only hrs, mins & secs extracted here
-        const hashedUniqueOTP = await bcryptjs.hash(uniqueOTP, 12);
+        const hashedUniqueOTP = await bcrypt.hash(uniqueOTP, 12);
         if(!user) {
             throw new Error("User not found.");
         }

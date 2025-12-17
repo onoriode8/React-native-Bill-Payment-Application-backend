@@ -1,5 +1,6 @@
 import expressRateLimit from "express-rate-limit"
 
+import Users from '../model/user/user.js'
 
 
 const rateLimit = expressRateLimit({
@@ -9,7 +10,23 @@ const rateLimit = expressRateLimit({
     statusCode: 429,
     standardHeaders: false,
     legacyHeaders: false,
-    keyGenerator: (req, res) => req.body.email || req.body.username
+    keyGenerator: async (req, res) => {
+        try {
+            const user = await Users.findOne({ email: req.body.email })
+            if(!user) {
+                throw new Error("User not found.")
+                // return res.status(404).json("User not found.")
+            }
+            req.body.email || req.body.username
+        } catch(err) {
+            if(err.message === "User not found.") {
+                throw new Error(err.message);
+            }
+            throw new Error("Something went wrong.");
+            // return res.status(500).json("Something went wrong.")
+        }
+        // req.body.email || req.body.username
+    }
 })
 
 

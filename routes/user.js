@@ -15,7 +15,7 @@ import { allTransactionHistory, fundsTransactionHistory,
 import { verifyEmailByOTP, verifyCodeByEmail, sendEmailToResetPassword, resetPassword } from '../controllers/user/security.js'
 import { createPaymentPin, verifyUserPaymentPin, ResetPaymentPin, changePaymentPin } from '../controllers/user/pins.js';
 import { changeAppPassword, ResetAppPassword } from '../controllers/user/app-password.js';
-
+import { sendOTPtoPhoneNumber, sendOTPtoEmailAddress, resendOTPtoUserData } from '../controllers/user/otp-func.js'
 
 
 const router = Router();
@@ -104,24 +104,40 @@ router.patch("/reset/payment/pin/:userId", rateLimit,
     check("formattedConfirmedPaymentPin").notEmpty().isLength({ min: 4 }),
     authMiddleware, roleBasedAccess(["User"]), ResetPaymentPin); //passed.
 
-router.patch("/change/payment/pin/:userId", rateLimit, 
+router.patch("/change/payment/pin/:userId", rateLimit,
     check("formattedOldPaymentPin").notEmpty().isLength({ min: 4 }),
     check("formattedNewPaymentPin").notEmpty().isLength({ min: 4 }),
     check("formattedConfirmedPaymentPin").notEmpty().isLength({ min: 4 }),
-    authMiddleware, roleBasedAccess(["User"]), changePaymentPin);
+    authMiddleware, roleBasedAccess(["User"]), changePaymentPin); //passed.
 
 //change password inside app
 router.patch("/change/app/password/:userId", rateLimit,
-    check("oldAppPassword").notEmpty().isLength({ min: 6 }), 
-    check("newAppPassword").notEmpty().isLength({ min: 6 }), 
-    check("confirmedAppPassword").notEmpty().isLength({ min: 6 }),
-    authMiddleware, roleBasedAccess(["User"]), changeAppPassword);
+    check("oldAppPassword").notEmpty().isLength({ min: 8 }), 
+    check("newAppPassword").notEmpty().isLength({ min: 8 }), 
+    check("confirmedAppPassword").notEmpty().isLength({ min: 8 }),
+    authMiddleware, roleBasedAccess(["User"]), changeAppPassword); //passed.
 
 //reset app password inside app
 router.patch("/reset/app/password/:userId", rateLimit,
-    check("newAppPassword").notEmpty().isLength({ min: 6 }), 
-    check("confirmedAppPassword").notEmpty().isLength({ min: 6 }),
-    authMiddleware, roleBasedAccess(["User"]), ResetAppPassword);
+    check("newAppPassword").notEmpty().isLength({ min: 8 }), 
+    check("confirmedAppPassword").notEmpty().isLength({ min: 8 }),
+    authMiddleware, roleBasedAccess(["User"]), ResetAppPassword); //passed.
+
+router.post("/resend/otp/:userId", 
+    rateLimit, authMiddleware, roleBasedAccess(["User"]), resendOTPtoUserData);
+
+//verify otp inside app
+router.post("/verify/identity/otp/:userId", 
+    rateLimit, authMiddleware, roleBasedAccess(["User"]), () => {})
+
+//send otp inside app
+router.post("/send/otp/email/:userId", check("email").notEmpty().isEmail().normalizeEmail(),
+    rateLimit, authMiddleware, roleBasedAccess(["User"]), sendOTPtoEmailAddress) //passed.
+
+//send otp inside app
+router.post("/send/otp/phone/:userId", 
+    check("to").notEmpty().isLength({ min: 10 }), 
+    rateLimit, authMiddleware, roleBasedAccess(["User"]), sendOTPtoPhoneNumber); //passed waiting for twilio.
 
 //add other routes here
 

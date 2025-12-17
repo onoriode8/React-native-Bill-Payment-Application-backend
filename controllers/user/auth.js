@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import axios from 'axios'
-import bcryptjs from 'bcryptjs'
+import bcrypt from 'bcrypt'
 import otpGenerator from 'otp-generator'
 import { validationResult } from 'express-validator'
 import { UAParser } from 'ua-parser-js'
@@ -51,7 +51,7 @@ export const login = async (req, res) => {
     const ip = req.headers["x-forwarded-x"] || req.connection.remoteAddress || req.socket.remoteAddress
 
     try {
-        const isValid = await bcryptjs.compare(password, user.password)
+        const isValid = await bcrypt.compare(password, user.password)
         if(!isValid) return res.status(401).json("Invalid Credentials Entered");
         const userEmail = user.email;
         
@@ -162,7 +162,7 @@ export const signup = async (req, res) => {
         userId: null
     })
     const defaultPin = "1234"
-    const hashedPin = await bcryptjs.hash(defaultPin, 12)
+    const hashedPin = await bcrypt.hash(defaultPin, 12)
     const userSecurity = new UserSecurity({
         paymentPin: hashedPin,
         MFA: [{
@@ -180,7 +180,7 @@ export const signup = async (req, res) => {
     
     let sess
     try {
-        const hashedPassword = await bcryptjs.hash(password, 12)
+        const hashedPassword = await bcrypt.hash(password, 12)
         //generate unique 6 digit otp pin.
         const uniqueOTP = otpGenerator.generate(6, { upperCaseAlphabets: false, lowerCaseAlphabets: false, specialChars: false })
         const date = new Date(Date.now() + 15 * 60 * 1000) //15 minutes
@@ -189,7 +189,7 @@ export const signup = async (req, res) => {
 
         sess = await startSession()
         sess.startTransaction()
-        const hashedUniqueOTP = await bcryptjs.hash(uniqueOTP, 12);
+        const hashedUniqueOTP = await bcrypt.hash(uniqueOTP, 12);
         //dummy data phone number
         const phoneNumber = "09055364280"
         const createdUser = new Users({

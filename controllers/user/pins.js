@@ -1,4 +1,4 @@
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { validationResult } from "express-validator"
 
 import User from "../../model/user/user.js";
@@ -187,7 +187,7 @@ export const ResetPaymentPin = async(req, res) => {
 }
 
 
-export const changePaymentPin = async() => {
+export const changePaymentPin = async(req, res) => {
     const userId = req.params.userId;
     const { formattedOldPaymentPin, formattedNewPaymentPin, 
         formattedConfirmedPaymentPin } = req.body // 5782
@@ -212,16 +212,24 @@ export const changePaymentPin = async() => {
         return res.status(401).json("Access Denied.");
     }
 
+    if(formattedOldPaymentPin.toString().trim().length !== 4 
+        && formattedNewPaymentPin.toString().trim().length !== 4 &&
+        formattedConfirmedPaymentPin.toString().trim().length !== 4
+    ) {
+        return res.status(422).json("Pin must contain a value.");
+    }
+
     if(!user.isPaymentPinSet) {
         return res.status(400).json("Create payment pin first.");
     }
 
     let hashedPaymentPin;
     try {
-       hashedPaymentPin = await bcrypt.compare(formattedNewPaymentPin.toString(), user.security.paymentPin);
+       hashedPaymentPin = await bcrypt.compare(formattedOldPaymentPin.toString(), user.security.paymentPin);
     } catch (error) {
         return res.status(500).json("Something went wrong.")
     }
+
     if(!hashedPaymentPin) {
         return res.status(422).json({ message: `Incorrect pin entered.` });
     }

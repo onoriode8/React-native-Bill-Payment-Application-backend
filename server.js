@@ -34,13 +34,13 @@ server.use("/owner", ownerRoute);
 server.use("/user", userRoutes)
 server.use("/admin", adminRoute)
 
-server.use((req, res) => {
-    return res.status(200).json({})
+server.use((error, req, res, next) => {
+    // console.log("CHECK IF RUN", error.message)
+    return res.status(400).json(error.message);
 })
 
-server.use((error, req, res, next) => {
-    console.log(error)
-    return res.status(400).json(error)
+server.use((req, res) => {
+    return res.status(200).json({})
 })
 
 await ConnectDB()
